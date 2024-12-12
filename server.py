@@ -447,8 +447,6 @@ class RequestHandler(SimpleHTTPRequestHandler):
             self.send_error(500, str(e))
         finally:
             session.close()
-            
-    # In server.py, update the _handle_simulate_season method:
 
     def _handle_simulate_season(self):
         """Handle POST request to simulate a full season"""
@@ -513,7 +511,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
                     home_team = session.query(Team).get(home_id)
                     venue = home_team.arena if home_team else "Home Arena"
                     
-                    # Simulate game - Removed game_date parameter
+                    # Simulate game
                     result = simulate_game(
                         home_lineup,
                         away_lineup,
@@ -687,7 +685,6 @@ class RequestHandler(SimpleHTTPRequestHandler):
 
     def _serve_file(self, filename):
         """Serve static files"""
-        # Prepend 'frontend/' to the file path
         file_path = filename
         try:
             with open(file_path, 'rb') as f:
