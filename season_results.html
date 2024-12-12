@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<!-- This file displays the season results and MVP data for a selected team. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Season Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .navigation {
+            margin-bottom: 20px;
+        }
+        .nav-button {
+            padding: 8px 16px;
+            margin-right: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .nav-button:hover {
+            background-color: #0056b3;
+        }
+        .team-section {
+            background-color: #f8f9fa;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .team-name {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .team-record {
+            font-size: 20px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .team-stats {
+            font-size: 18px;
+            color: #666;
+        }
+        .mvp-section {
+            background-color: #f8f9fa;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .mvp-title {
+            color: #d4af37;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+        .mvp-name {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+        .mvp-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .stat-card {
+            background-color: white;
+            padding: 15px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="navigation">
+            <a href="/" class="nav-button">Home</a>
+        </div>
+
+        <div class="team-section" id="teamSection">
+            <div class="team-name">Loading team data...</div>
+            <div class="team-record"></div>
+            <div class="team-stats"></div>
+        </div>
+
+        <div class="mvp-section">
+            <h2 class="mvp-title">Team MVP</h2>
+            <div id="mvpContent">
+                <div class="mvp-name">Loading MVP data...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadSeasonResults() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const favoriteTeamId = urlParams.get('team');
+            
+            if (!favoriteTeamId) {
+                alert('No team selected');
+                return;
+            }
+            
+            try {
+                const [teamResponse, mvpResponse] = await Promise.all([
+                    fetch(`/team_info/${favoriteTeamId}`),
+                    fetch(`/season_mvp/${favoriteTeamId}`)
+                ]);
+                
+                const teamData = await teamResponse.json();
+                const mvpData = await mvpResponse.json();
+                
+                // Update team section
+                document.getElementById('teamSection').innerHTML = `
+                    <div class="team-name">${teamData.name}</div>
+                    <div class="team-record">Season Record: ${teamData.season_wins}-${teamData.season_losses}</div>
+                    <div class="team-stats">
+                        <div>Win Rate: ${(teamData.win_rate * 100).toFixed(1)}%</div>
+                    </div>
+                `;
+                
+                // Update MVP section
+                document.getElementById('mvpContent').innerHTML = `
+                    <div class="mvp-name">${mvpData.name}</div>
+                    ${mvpData.name !== "No MVP Yet" ? `
+                        <div class="mvp-stats">
+                            <div class="stat-card">
+                                <div class="stat-label">Points Per Game</div>
+                                <div class="stat-value">${mvpData.ppg.toFixed(1)}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Rebounds Per Game</div>
+                                <div class="stat-value">${mvpData.rpg.toFixed(1)}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Assists Per Game</div>
+                                <div class="stat-value">${mvpData.apg.toFixed(1)}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Games Played</div>
+                                <div class="stat-value">${mvpData.games_played}</div>
+                            </div>
+                        </div>
+                    ` : '<p>No team MVP data available</p>'}
+                `;
+                
+            } catch (error) {
+                console.error('Error loading season results:', error);
+                document.getElementById('teamSection').innerHTML = `
+                    <div class="error">Error loading team data: ${error.message}</div>
+                `;
+                document.getElementById('mvpContent').innerHTML = `
+                    <div class="error">Error loading MVP data: ${error.message}</div>
+                `;
+            }
+        }
+
+        window.addEventListener('load', loadSeasonResults);
+    </script>
+</body>
+</html>

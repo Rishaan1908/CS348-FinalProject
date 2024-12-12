@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<!-- This file allows users to set up a season simulation for a specific team. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Season Simulator Setup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .title {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #555;
+            font-size: 16px;
+        }
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .button-container {
+            text-align: center;
+        }
+        .simulate-button {
+            padding: 15px 30px;
+            font-size: 18px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+            background-color: #28a745;
+            transition: background-color 0.2s;
+        }
+        .simulate-button:hover {
+            background-color: #218838;
+        }
+        .simulate-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .home-link {
+            display: block;
+            margin-bottom: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .home-link:hover {
+            text-decoration: underline;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .loading-text {
+            margin-bottom: 10px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="home-link">← Back to Home</a>
+        <h1 class="title">Season Simulator Setup</h1>
+        
+        <div class="form-group">
+            <label for="favoriteTeam">Simulate Season For 1 Team:</label>
+            <select id="favoriteTeam" required>
+                <option value="">Select A Team</option>
+            </select>
+        </div>
+        
+        <div class="button-container">
+            <button onclick="startSimulation()" id="simulateButton" class="simulate-button">
+                Simulate 82-Game Season
+            </button>
+        </div>
+        
+        <div id="loading" class="loading">
+            <div class="loading-text">Simulating 82-game season...</div>
+            <div>This may take a moment.</div>
+        </div>
+    </div>
+
+    <script>
+        async function loadTeams() {
+            try {
+                const response = await fetch('/get_teams');
+                const teams = await response.json();
+                
+                const favoriteSelect = document.getElementById('favoriteTeam');
+                
+                teams.forEach(team => {
+                    const option = document.createElement('option');
+                    option.value = team.team_id;
+                    option.textContent = `${team.city} ${team.team_name}`;
+                    favoriteSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading teams:', error);
+            }
+        }
+
+        async function startSimulation() {
+            const favoriteTeam = document.getElementById('favoriteTeam').value;
+            if (!favoriteTeam) {
+                alert('Please select your favorite team');
+                return;
+            }
+
+            const button = document.getElementById('simulateButton');
+            const loading = document.getElementById('loading');
+            button.disabled = true;
+            loading.style.display = 'block';
+
+            try {
+                const response = await fetch('/simulate_season', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        favorite_team_id: favoriteTeam
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to simulate season');
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    window.location.href = `/season_results.html?team=${favoriteTeam}`;
+                }
+            } catch (error) {
+                alert('Error simulating season: ' + error.message);
+                button.disabled = false;
+            }
+            loading.style.display = 'none';
+        }
+
+        window.addEventListener('load', loadTeams);
+    </script>
+</body>
+</html>

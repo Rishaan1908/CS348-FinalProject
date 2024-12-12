@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Document metadata -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBA Simulator</title>
+    
+    <!-- Styles -->
+    <style>
+        /* Base styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Container styles */
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        /* Title styles */
+        .title {
+            font-size: 32px;
+            color: #333;
+            margin-bottom: 40px;
+        }
+
+        /* Button container styles */
+        .button-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Button styles */
+        .choice-button {
+            padding: 30px 20px;
+            font-size: 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: white;
+            text-decoration: none;
+            transition: transform 0.2s, background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .choice-button:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Single game button styles */
+        .single-game {
+            background-color: #007bff;
+        }
+
+        .single-game:hover {
+            background-color: #0056b3;
+        }
+
+        /* Full season button styles */
+        .full-season {
+            background-color: #28a745;
+        }
+
+        .full-season:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <!-- Main container -->
+    <div class="container">
+        <!-- Page title -->
+        <h1 class="title">NBA Game Simulator</h1>
+        
+        <!-- Navigation buttons -->
+        <div class="button-container">
+            <a href="single_game.html" class="choice-button single-game">Single Game</a>
+            <a href="season_setup.html" class="choice-button full-season">Full Season</a>
+        </div>
+    </div>
+</body>
+</html>

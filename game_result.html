@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<!-- This file shows detailed game results, including team and player statistics. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Result</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .score-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .score {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .teams-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .team-section {
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        .stats-table th, .stats-table td {
+            padding: 8px;
+            text-align: right;
+            border-bottom: 1px solid #ddd;
+        }
+        .stats-table th:first-child, .stats-table td:first-child {
+            text-align: left;
+        }
+        .winner { color: #28a745; }
+        .loser { color: #dc3545; }
+        .team-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .arena {
+            color: #666;
+            text-align: center;
+            margin: 10px 0;
+            font-style: italic;
+        }
+        .team-totals {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .team-totals td {
+            border-top: 2px solid #ddd;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            text-decoration: none;
+            text-align: center;
+            transition: background-color 0.3s;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .resimulated-badge {
+            background-color: #ffc107;
+            color: black;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+        @media (max-width: 768px) {
+            .teams-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="gameResult">Loading game results...</div>
+        
+        <div class="action-buttons">
+            <a href="/" class="btn btn-primary">Simulate New Game</a>
+            <a href="/game_history.html" class="btn btn-secondary">View Game History</a>
+        </div>
+    </div>
+
+    <script>
+        function formatMinutes(minutes) {
+            return `${Math.floor(minutes)}:${String(Math.round((minutes % 1) * 60)).padStart(2, '0')}`;
+        }
+
+        function createTeamStatsTable(players) {
+            // Calculate team totals
+            const totals = players.reduce((acc, player) => {
+                acc.minutes += player.stats.minutes;
+                acc.points += player.stats.points;
+                acc.rebounds += player.stats.rebounds;
+                acc.assists += player.stats.assists;
+                acc.steals += player.stats.steals;
+                acc.blocks += player.stats.blocks;
+                acc.turnovers += player.stats.turnovers;
+                acc.fgm += player.stats.fgm;
+                acc.fga += player.stats.fga;
+                return acc;
+            }, {
+                minutes: 0, points: 0, rebounds: 0, assists: 0,
+                steals: 0, blocks: 0, turnovers: 0, fgm: 0, fga: 0
+            });
+
+            // Sort players by minutes played (starters first)
+            const sortedPlayers = [...players].sort((a, b) => b.stats.minutes - a.stats.minutes);
+
+            return `
+                <table class="stats-table">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>MIN</th>
+                            <th>PTS</th>
+                            <th>REB</th>
+                            <th>AST</th>
+                            <th>STL</th>
+                            <th>BLK</th>
+                            <th>TO</th>
+                            <th>FG</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${sortedPlayers.map(player => `
+                            <tr>
+                                <td>${player.name}</td>
+                                <td>${formatMinutes(player.stats.minutes)}</td>
+                                <td>${player.stats.points}</td>
+                                <td>${player.stats.rebounds}</td>
+                                <td>${player.stats.assists}</td>
+                                <td>${player.stats.steals}</td>
+                                <td>${player.stats.blocks}</td>
+                                <td>${player.stats.turnovers}</td>
+                                <td>${player.stats.fgm}-${player.stats.fga}</td>
+                            </tr>
+                        `).join('')}
+                        <tr class="team-totals">
+                            <td>Team Totals</td>
+                            <td>${formatMinutes(totals.minutes)}</td>
+                            <td>${totals.points}</td>
+                            <td>${totals.rebounds}</td>
+                            <td>${totals.assists}</td>
+                            <td>${totals.steals}</td>
+                            <td>${totals.blocks}</td>
+                            <td>${totals.turnovers}</td>
+                            <td>${totals.fgm}-${totals.fga}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+        }
+
+        async function loadGameResult() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const gameId = urlParams.get('id');
+            
+            if (!gameId) {
+                document.getElementById('gameResult').innerHTML = '<p>No game ID provided</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/game_result/${gameId}`);
+                const data = await response.json();
+                
+                const homeWon = data.game.home_score > data.game.away_score;
+                
+                const html = `
+                    <div class="arena">
+                        <p>
+                            ${data.game.arena} • ${new Date(data.game.date).toLocaleDateString()}
+                            ${data.game.resimulated ? '<span class="resimulated-badge">Resimulated</span>' : ''}
+                        </p>
+                    </div>
+                    <div class="score-header">
+                        <div class="score">
+                            <span class="${homeWon ? 'winner' : 'loser'}">${data.home_team.name} ${data.game.home_score}</span>
+                            -
+                            <span class="${!homeWon ? 'winner' : 'loser'}">${data.away_team.name} ${data.game.away_score}</span>
+                        </div>
+                    </div>
+                    <div class="teams-container">
+                        <div class="team-section">
+                            <div class="team-name">${data.home_team.name}</div>
+                            ${createTeamStatsTable(data.home_team.players)}
+                        </div>
+                        <div class="team-section">
+                            <div class="team-name">${data.away_team.name}</div>
+                            ${createTeamStatsTable(data.away_team.players)}
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('gameResult').innerHTML = html;
+            } catch (error) {
+                document.getElementById('gameResult').innerHTML = 
+                    `<div class="error">Error loading game results: ${error.message}</div>`;
+            }
+        }
+
+        window.addEventListener('load', loadGameResult);
+    </script>
+</body>
+</html>

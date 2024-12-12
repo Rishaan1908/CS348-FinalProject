@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Starting Lineups</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .rosters-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 40px;
+            margin-bottom: 30px;
+        }
+        .roster {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .player-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            margin: 8px 0;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .player-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .player-card.selected {
+            background-color: #e3f2fd;
+            border-color: #2196f3;
+        }
+        .player-info {
+            flex: 1;
+        }
+        .player-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 4px;
+            font-size: 1.1em;
+        }
+        .player-stats {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .selected-count {
+            color: #666;
+            margin-bottom: 15px;
+            font-weight: 500;
+            font-size: 1.1em;
+        }
+        .error-message {
+            color: #d32f2f;
+            background-color: #ffebee;
+            border: 1px solid #ffcdd2;
+            padding: 12px 20px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+        button {
+            width: 100%;
+            padding: 14px 20px;
+            background-color: #1976d2;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #1565c0;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .resimulation-banner {
+            background-color: #fff3e0;
+            color: #e65100;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            text-align: center;
+            display: none;
+        }
+        @media (max-width: 768px) {
+            .rosters-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="resimulationBanner" class="resimulation-banner">
+            Resimulating game - Select new lineups
+        </div>
+
+        <div id="errorMessage" class="error-message">
+            Please select exactly 5 starters for each team
+        </div>
+
+        <div class="rosters-container">
+            <div class="roster">
+                <h2 id="homeTeamTitle">Home Team</h2>
+                <div id="homeSelectedCount" class="selected-count">Selected: 0/5</div>
+                <div id="homeRoster"></div>
+            </div>
+
+            <div class="roster">
+                <h2 id="awayTeamTitle">Away Team</h2>
+                <div id="awaySelectedCount" class="selected-count">Selected: 0/5</div>
+                <div id="awayRoster"></div>
+            </div>
+        </div>
+
+        <button id="simulateButton" disabled>Simulate Game</button>
+    </div>
+
+    <script>
+        const selectedPlayers = {
+            home: new Set(),
+            away: new Set()
+        };
+
+        let homeTeam = null;
+        let awayTeam = null;
+        let resimulateId = null;
+
+        function updateSelectedCount(team) {
+            const count = selectedPlayers[team].size;
+            document.getElementById(`${team}SelectedCount`).textContent = `Selected: ${count}/5`;
+            
+            const canSimulate = selectedPlayers.home.size === 5 && selectedPlayers.away.size === 5;
+            document.getElementById('simulateButton').disabled = !canSimulate;
+            document.getElementById('errorMessage').style.display = canSimulate ? 'none' : 'block';
+        }
+
+        function togglePlayerSelection(playerId, team) {
+            const playerCard = document.getElementById(`player-${playerId}`);
+            
+            if (selectedPlayers[team].has(playerId)) {
+                selectedPlayers[team].delete(playerId);
+                playerCard.classList.remove('selected');
+            } else if (selectedPlayers[team].size < 5) {
+                selectedPlayers[team].add(playerId);
+                playerCard.classList.add('selected');
+            }
+            
+            updateSelectedCount(team);
+        }
+
+        function createPlayerCard(player, team) {
+            const ppg = player.avg_points?.toFixed(1) || '0.0';
+            const rpg = player.avg_rebounds?.toFixed(1) || '0.0';
+            const apg = player.avg_assists?.toFixed(1) || '0.0';
+            const position = player.position || '-';
+            const jerseyNumber = player.jersey_number || '00';
+
+            return `
+                <div id="player-${player.player_id}" 
+                     class="player-card" 
+                     onclick="togglePlayerSelection(${player.player_id}, '${team}')">
+                    <div class="player-info">
+                        <div class="player-name">${player.first_name} ${player.last_name}</div>
+                        <div class="player-stats">
+                            #${jerseyNumber} | ${position} | ${ppg} PPG | ${rpg} RPG | ${apg} APG
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadTeamPlayers(teamId, side) {
+            try {
+                const response = await fetch(`/get_team_players/${teamId}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const players = await response.json();
+                
+                const rosterHtml = players
+                    .map(player => createPlayerCard(player, side))
+                    .join('');
+                
+                document.getElementById(`${side}Roster`).innerHTML = rosterHtml;
+                
+                // Update team title
+                const teamName = players[0]?.team_name || 'Team';
+                document.getElementById(`${side}TeamTitle`).textContent = 
+                    side === 'home' ? `Home Team - ${teamName}` : `Away Team - ${teamName}`;
+                
+                // Store team reference
+                if (side === 'home') homeTeam = players[0]?.team_id;
+                if (side === 'away') awayTeam = players[0]?.team_id;
+
+                // If this is a resimulation, load previous lineups after loading players
+                if (resimulateId && side === 'away') { // Load after both teams are loaded
+                    loadPreviousLineups(resimulateId);
+                }
+            } catch (error) {
+                console.error(`Error loading ${side} team players:`, error);
+                document.getElementById(`${side}Roster`).innerHTML = 
+                    `<div class="error-message">Error loading players: ${error.message}</div>`;
+            }
+        }
+
+        async function loadPreviousLineups(gameId) {
+            try {
+                const response = await fetch(`/get_game_lineups/${gameId}`);
+                const lineups = await response.json();
+                
+                // Clear existing selections
+                selectedPlayers.home.clear();
+                selectedPlayers.away.clear();
+                document.querySelectorAll('.player-card.selected').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                
+                // Mark starters as selected
+                lineups.forEach(lineup => {
+                    if (lineup.is_starter) {
+                        const team = lineup.team_id === homeTeam ? 'home' : 'away';
+                        const playerCard = document.getElementById(`player-${lineup.player_id}`);
+                        if (playerCard) {
+                            selectedPlayers[team].add(lineup.player_id);
+                            playerCard.classList.add('selected');
+                        }
+                    }
+                });
+                
+                updateSelectedCount('home');
+                updateSelectedCount('away');
+            } catch (error) {
+                console.error('Error loading previous lineups:', error);
+            }
+        }
+
+        async function simulateGame() {
+            const homePlayerIds = Array.from(selectedPlayers.home);
+            const awayPlayerIds = Array.from(selectedPlayers.away);
+            
+            try {
+                const response = await fetch('/simulate_game', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        home_players: homePlayerIds,
+                        away_players: awayPlayerIds,
+                        home_team_name: document.getElementById('homeTeamTitle').textContent.split('-')[1]?.trim(),
+                        resimulate_id: resimulateId
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                window.location.href = `/game_result.html?id=${result.game_id}`;
+            } catch (error) {
+                console.error('Error simulating game:', error);
+                document.getElementById('errorMessage').textContent = 
+                    'Error simulating game: ' + error.message;
+                document.getElementById('errorMessage').style.display = 'block';
+            }
+        }
+
+        // Initialize page
+        // In lineups.html, update the initialization script
+        window.addEventListener('load', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const homeTeamId = urlParams.get('home');
+            const awayTeamId = urlParams.get('away');
+            resimulateId = urlParams.get('resimulate');
+            
+            // If we have a resimulate ID but no team IDs, fetch the game data first
+            if (resimulateId && (!homeTeamId || !awayTeamId || homeTeamId === 'undefined' || awayTeamId === 'undefined')) {
+                try {
+                    const response = await fetch(`/game_result/${resimulateId}`);
+                    const gameData = await response.json();
+                    
+                    // Get the team IDs from the game data
+                    const correctHomeTeamId = gameData.home_team.team_id;
+                    const correctAwayTeamId = gameData.away_team.team_id;
+                    
+                    // Update the URL with the correct team IDs
+                    const newUrl = `/lineups.html?resimulate=${resimulateId}&home=${correctHomeTeamId}&away=${correctAwayTeamId}`;
+                    window.history.replaceState({}, '', newUrl);
+                    
+                    // Load the teams
+                    await Promise.all([
+                        loadTeamPlayers(correctHomeTeamId, 'home'),
+                        loadTeamPlayers(correctAwayTeamId, 'away')
+                    ]);
+                } catch (error) {
+                    console.error('Error loading game data:', error);
+                    document.getElementById('errorMessage').textContent = 
+                        'Error loading game data. Please try again.';
+                    document.getElementById('errorMessage').style.display = 'block';
+                    return;
+                }
+            } else if (homeTeamId && awayTeamId) {
+                await Promise.all([
+                    loadTeamPlayers(homeTeamId, 'home'),
+                    loadTeamPlayers(awayTeamId, 'away')
+                ]);
+            } else {
+                document.getElementById('errorMessage').textContent = 
+                    'Missing team selections. Please go back and select teams.';
+                document.getElementById('errorMessage').style.display = 'block';
+            }
+            
+            if (resimulateId) {
+                document.getElementById('resimulationBanner').style.display = 'block';
+            }
+            
+            document.getElementById('simulateButton').addEventListener('click', simulateGame);
+        });
+    </script>
+</body>
+</html>
